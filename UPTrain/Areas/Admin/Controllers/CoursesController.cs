@@ -1,32 +1,32 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using UPTrain.Models;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using UPTrain.IRepositories;
+using UPTrain.Models;
 
 namespace UPTrain.Areas.Admin.Controllers
 {
     [Area("Admin")]
     public class CoursesController : Controller
     {
-        private readonly ICourseRepository _courseRepo;
+        private readonly IRepository<Courses> _courseRepo;
         private readonly UserManager<User> _userManager;
 
-        public CoursesController(ICourseRepository courseRepo, UserManager<User> userManager)
+        public CoursesController(IRepository<Courses> courseRepo, UserManager<User> userManager)
         {
             _courseRepo = courseRepo;
             _userManager = userManager;
         }
 
+  
         public async Task<IActionResult> Index()
         {
-            var courses = await _courseRepo.GetAllAsync(null,
-                c => c. CreatedBy);
+            var courses = await _courseRepo.GetAllAsync(includes: c => c.CreatedBy);
             return View(courses);
         }
 
-        [HttpGet]
+
         public async Task<IActionResult> Create()
         {
             var users = await _userManager.Users.ToListAsync();
@@ -34,39 +34,78 @@ namespace UPTrain.Areas.Admin.Controllers
             return View();
         }
 
+     
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Courses course, IFormFile? ImageUrl)
+        public async Task<IActionResult> Create(Courses course ,IFormFile ImageUrl)
         {
-           
-            if (ImageUrl is not null && ImageUrl.Length > 0)
+          
             {
-                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(ImageUrl.FileName);
-                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot\\images", fileName);
+                
+                var user = await _userManager.GetUserAsync(User);
 
-                using (var stream = System.IO.File.Create(filePath))
+               
+                course.CreatedById = user.Id;
+                course.CreatedDate = DateTime.Now;
+
+               
+                if (ImageUrl != null && ImageUrl.Length > 0)
                 {
-                    await ImageUrl.CopyToAsync(stream);
+                    var fileName = Path.GetFileName(ImageUrl.FileName);
+                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/courses", fileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await ImageUrl.CopyToAsync(stream);
+                    }
+
+                    course.ImageUrl = "/images/courses/" + fileName;
                 }
 
-                course.ImageUrl = "/images/" + fileName; 
+                await _courseRepo.AddAsync(course);
+                await _courseRepo.CommitAsync();
+
+                return RedirectToAction(nameof(Index));
             }
-           
 
-            course.CreatedDate = DateTime.Now;
-
-            await _courseRepo.AddAsync(course);
-            await _courseRepo.CommitAsync();
-
-            TempData["SuccessMessage"] = "Course created successfully!";
-            return RedirectToAction(nameof(Index));
         }
 
-        public async Task<IActionResult> Delete([FromRoute] int id)
+
+        public async Task<IActionResult> Edit(int id)
+        {
+            var course = await _courseRepo.GetOneAsync(c => c.CourseId == id);
+            if (course == null) return NotFound();
+
+            return View(course);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, Courses course)
+        {
+            if (id != course.CourseId) return NotFound();
+
+            if (ModelState.IsValid)
+            {
+                course.UpdatedDate = DateTime.Now;
+
+                await _courseRepo.Update(course);
+                await _courseRepo.CommitAsync();
+
+                TempData["SuccessMessage"] = "Course updated successfully!";
+                return RedirectToAction(nameof(Index));
+            }
+            return View(course);
+        }
+
+        
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
         {
             var course = await _courseRepo.GetOneAsync(c => c.CourseId == id);
 
-            if (course is not null)
+            if (course != null)
             {
                 await _courseRepo.Delete(course);
                 await _courseRepo.CommitAsync();

@@ -72,16 +72,16 @@ namespace UPTrain.Repositories
         }
         public async Task<bool> CommitAsync()
         {
-            try
-            {
+            //try
+            //{
                 await _context.SaveChangesAsync();
                 return true;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error: {ex.Message}");
-                return false;
-            }
+            //}
+            //catch (Exception ex)
+            //{
+            //    Console.WriteLine($"Error: {ex.Message}");
+            //    return false;
+            //}
         }
     }
 }
