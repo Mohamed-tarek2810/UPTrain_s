@@ -2,22 +2,22 @@
 
 <style>
     body {
-        background-color: #121212; 
-        color: #e0e0e0; 
+        background-color: #121212;
+        color: #e0e0e0;
     }
 
     h2 {
-        color: #ffffff; 
+        color: #ffffff;
     }
 
     .table {
-        background-color: #1f1f1f; 
+        background-color: #1f1f1f;
         color: #e0e0e0;
         border: 1px solid #333;
     }
 
         .table thead th {
-            background-color: #333; 
+            background-color: #333;
             color: #ffffff;
             border-color: #444;
         }
@@ -28,11 +28,11 @@
 
     .table-bordered th,
     .table-bordered td {
-        border-color: #444 !important; 
+        border-color: #444 !important;
     }
 
     .btn-primary {
-        background-color: #4CAF50; 
+        background-color: #4CAF50;
         border-color: #4CAF50;
         color: white;
     }
@@ -44,7 +44,7 @@
     }
 
     .btn-danger {
-        background-color: #DC3545; 
+        background-color: #DC3545;
         border-color: #DC3545;
         color: white;
     }
@@ -54,14 +54,19 @@
 
 <a asp-action="Create" class="btn btn-primary mb-3">+ Add New User</a>
 
-<table class="table table-bordered">
+
+
+<h2>Users</h2>
+
+<table class="table table-striped">
     <thead>
         <tr>
             <th>Full Name</th>
-            <th>UserName</th>
+            <th>User Name</th>
             <th>Email</th>
             <th>Role</th>
-            <th></th>
+            <th>Status</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -73,8 +78,34 @@
                 <td>@user.Email</td>
                 <td>@user.Role</td>
                 <td>
-                    <a asp-area="Admin" asp-controller="Users" asp-action="Edit" asp-route-id="@user.UserId" class="btn btn-sm btn-warning">Edit</a>
-                    <a asp-action="Delete" asp-route-id="@user.UserId" class="btn btn-sm btn-danger">Delete</a>
+                    @if (user.IsBlocked)
+                    {
+                        <span class="badge bg-danger">Blocked</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-sm btn-warning">Edit</a>
+
+                    <form asp-action="Delete" asp-route-id="@user.Id" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+
+                    @if (user.IsBlocked)
+                    {
+                        <form asp-action="Unblock" asp-route-id="@user.Id" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-success">Unblock</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form asp-action="Block" asp-route-id="@user.Id" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-dark">Block</button>
+                        </form>
+                    }
                 </td>
             </tr>
         }

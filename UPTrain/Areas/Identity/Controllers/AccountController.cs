@@ -5,7 +5,7 @@ using UPTrain.ViewModels;
 
 namespace UPTrain.Areas.Identity.Controllers
 {
-    [Area("Identity")] 
+    [Area("Identity")]
     public class AccountController : Controller
     {
         private readonly SignInManager<User> signInManager;
@@ -17,7 +17,7 @@ namespace UPTrain.Areas.Identity.Controllers
             this.signInManager = signInManager;
         }
 
-     
+
         public IActionResult Register()
         {
             return View();
@@ -52,31 +52,49 @@ namespace UPTrain.Areas.Identity.Controllers
             return View(registerViewModel);
         }
 
-       
+
         public IActionResult Login()
         {
             return View();
         }
 
         [HttpPost]
-        public async Task<IActionResult> Login(LoginViewModel LoginViewModel)
+        public async Task<IActionResult> Login(LoginViewModel loginViewModel)
         {
             if (ModelState.IsValid)
             {
-                var result = await signInManager.PasswordSignInAsync(LoginViewModel.Email, LoginViewModel.Password, LoginViewModel.RememberMe, false);
+                
+                var user = await userManager.FindByEmailAsync(loginViewModel.Email);
+
+                if (user == null)
+                {
+                    ModelState.AddModelError("", "Email or password is incorrect.");
+                    return View(loginViewModel);
+                }
+
+              
+                if (user.IsBlocked)
+                {
+                    ModelState.AddModelError("", "Your account has been blocked. Please contact support.");
+                    return View(loginViewModel);
+                }
+
+               
+                var result = await signInManager.PasswordSignInAsync(user, loginViewModel.Password, loginViewModel.RememberMe, false);
 
                 if (result.Succeeded)
                 {
                     return RedirectToAction("Index", "Home", new { area = "Customer" });
-
                 }
                 else
                 {
                     ModelState.AddModelError("", "Email or password is incorrect.");
                 }
             }
-            return View(LoginViewModel);
+
+            return View(loginViewModel);
         }
+
 
         public async Task<IActionResult> Logout()
         {
